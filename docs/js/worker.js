@@ -54,12 +54,12 @@
         }
         function getBayerMatrix(){
             const ditherRCoefficient = calculateDitherRCoefficient(2);
-            return new Float32Array([
+            return [
                 -0.5 		 * ditherRCoefficient,
                 0.166666667  * ditherRCoefficient,
                 0.5 		 * ditherRCoefficient,
                 -.166666667  * ditherRCoefficient,
-            ]);
+            ];
         }
         function ditherImage(pixels, imageWidth, imageHeight){
             const pixelsLength = pixels.length;
@@ -67,23 +67,23 @@
             const bayerMatrix = getBayerMatrix();
             const threshold = 0.5;
             
-            for(let pixelOffset=0,x=0,y=0;pixelOffset<pixelsLength;pixelOffset+=4){
-                //ignore transparent pixels
-                if(pixels[pixelOffset+3] > 0){
-                    const bayerValue = bayerMatrix[y%bayerDimensions * bayerDimensions + (x%bayerDimensions)];
-                    const currentLightness = pixelLightness(pixels[pixelOffset], pixels[pixelOffset+1], pixels[pixelOffset+2]);
-                    
-                    //dither between black and white
-                    const outputColor = currentLightness + bayerValue >= threshold ? 255 : 0;
-                    //set color in pixels
-                    for(let i=0;i<3;i++){
-                        pixels[pixelOffset+i] = outputColor;
+            let pixelOffset = 0;
+            for(let y=0; y<imageHeight; y++) {
+                const bayerRow = y%bayerDimensions * bayerDimensions;
+                for (let x=0, bayerCol = 0; x<imageWidth; x++, pixelOffset+= 4, bayerCol++) {
+                    if (bayerCol === bayerDimensions) {
+                        bayerCol = 0;
                     }
-                }
-                x++;
-                if(x >= imageWidth){
-                    x = 0;
-                    y++;
+                    const bayerValue = bayerMatrix[bayerRow + bayerCol];
+                    if(pixels[pixelOffset+3] !== 0){
+                        const currentLightness = pixelLightness(pixels[pixelOffset], pixels[pixelOffset+1], pixels[pixelOffset+2]);
+                        //dither between black and white
+                        const outputColor = currentLightness + bayerValue >= threshold ? 255 : 0;
+                        //set color in pixels
+                        pixels[pixelOffset] = outputColor;
+                        pixels[pixelOffset+1] = outputColor;
+                        pixels[pixelOffset+2] = outputColor;
+                    }
                 }
             }
         }
